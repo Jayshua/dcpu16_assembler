@@ -13,7 +13,7 @@ dasm [-h|--help] [-o output_file] [-a|--ast] input_file
 
 
 ## Library Usage
-Call `dcpu16_assembler::assemble(input_string)` to get a Vec&lt;u16&gt;.
+Call `dcpu16_assembler::assemble(input_string)` to get a Vec&lt;u16&gt; of the assembled program.
 
 
 ## Known Issues
