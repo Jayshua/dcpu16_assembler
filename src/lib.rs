@@ -1,14 +1,14 @@
-extern crate dcpu16_types;
-
+mod ast;
+mod code_generator;
 mod parser {
    include!(concat!(env!("OUT_DIR"), "/grammar.rs"));
 }
 
-mod ast;
-mod code_generator;
+pub use parser::ParseError as ParseError;
 
-pub fn generate<'a>(input: &'a str) -> Vec<u16> {
-   let parsed = parser::program(input).unwrap();
-   let code = code_generator::Generator::generate(parsed);
-   code
+pub fn assemble<'a>(input: &'a str) -> Result<Vec<u16>, ParseError> {
+   match parser::program(input) {
+      Ok(ast) => Ok(code_generator::generate(ast)),
+      Err(error) => Err(error),
+   }
 }

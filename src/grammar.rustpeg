@@ -1,5 +1,4 @@
-use super::dcpu16_types::{SpecialOperation, BasicOperation};
-use super::ast::{Literal, Register, Indirection, Value, Destination, Instruction, DatData};
+use super::ast::*;
 
 
 pub program -> Vec<Instruction>

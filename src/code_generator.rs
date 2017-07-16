@@ -1,37 +1,17 @@
 use ::std::collections::HashMap;
 use ast::*;
-use dcpu16_types::{SpecialOperation, BasicOperation};
 
 
 
-pub struct Generator {
+struct Generator {
    output: Vec<u16>,                      // The binary output so far
    pending_labels: Vec<(String, u16)>,    // The list of labels to be resolved after generation
    label_locations: HashMap<String, u16>, // The list of labels and their locations for resolution after generation
 }
 
 
-
 impl Generator {
-   pub fn generate(instructions: Vec<Instruction>) -> Vec<u16> {
-      let mut generator = Generator {
-         output: vec![],
-         pending_labels: vec![],
-         label_locations: HashMap::new(),
-      };
-
-      for inst in instructions {
-         generator.consume(inst);
-      }
-
-      generator.finalize();
-
-      generator.output
-   }
-
-
-
-   pub fn consume(&mut self, instruction: Instruction) {
+   fn consume(&mut self, instruction: Instruction) {
       match instruction {
          Instruction::Basic(operation, destination, value) => self.generate_basic(operation, destination, value),
          Instruction::Special(operation, value)            => self.generate_special(operation, value),
@@ -42,7 +22,7 @@ impl Generator {
 
 
 
-   pub fn finalize(&mut self) {
+   fn finalize(&mut self) {
       for &(ref label, ref location) in &self.pending_labels {
          match self.label_locations.get(label) {
             Some(origin) => self.output[*location as usize] = *origin,
@@ -117,4 +97,21 @@ impl Generator {
          },
       }
    }
+}
+
+
+pub fn generate(instructions: Vec<Instruction>) -> Vec<u16> {
+   let mut generator = Generator {
+      output: vec![],
+      pending_labels: vec![],
+      label_locations: HashMap::new(),
+   };
+
+   for inst in instructions {
+      generator.consume(inst);
+   }
+
+   generator.finalize();
+
+   generator.output
 }

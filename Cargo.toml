@@ -5,8 +5,15 @@ authors = ["Jayshua Nelson <me@jayshuanelson.com>"]
 build = "build.rs"
 
 [dependencies]
-dcpu16_types = { path = "../dcpu16_types" }
+argparse = "0.2.1"
 
 [build-dependencies]
 peg = "0.5.4"
-dcpu16_types = { path = "../dcpu16_types" }
+
+[lib]
+name = "dcpu16_assembler"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dasm"
+path = "src/cli.rs"
