@@ -21,7 +21,17 @@ use std::io::{Write, Read};
 fn main() {
    let (output_file_path, input_file_path, print_ast) = get_arguments();
    let input_program = read_program(input_file_path);
-   write_bits(output_file_path, assemble(input_program.as_str(), print_ast).unwrap());
+
+   let assembled_program = match assemble(input_program.as_str(), print_ast) {
+      Ok(program) => program,
+
+      Err(err) => {
+         println!("Error assembling program: {}", err);
+         std::process::exit(-1);
+      },
+   };
+
+   write_bits(output_file_path, assembled_program);
 }
 
 
@@ -54,22 +64,48 @@ fn get_arguments() -> (String, String, bool) {
 
 // Read the file at the provided path into a String
 fn read_program(file_path: String) -> String {
-   let mut in_file = File::open(file_path).unwrap();
+   let mut in_file = match File::open(file_path) {
+      Ok(file) => file,
+      Err(err) => {
+         println!("Unable to open input file: {}", err);
+         std::process::exit(-1);
+      },
+   };
+
    let mut program: String = String::new();
 
-   in_file.read_to_string(&mut program);
-   program
+   match in_file.read_to_string(&mut program) {
+      Ok(_) => program,
+      Err(err) => {
+         println!("Unable to read input file: {}", err);
+         std::process::exit(-1);
+      },
+   }
 }
 
 
 
 // Write the provided data to a file at the provided path
 fn write_bits(file_path: String, data: Vec<u16>) {
-   let mut out_file = File::create(file_path).unwrap();
+   let mut out_file = match File::create(file_path) {
+      Ok(file) => file,
+      Err(err) => {
+         println!("Unable to create output file: {}", err);
+         std::process::exit(-1);
+      },
+   };
+
 
    for word in data {
       let bytes: [u8; 2] = [(word >> 8) as u8, (word & 0xff) as u8];
-      out_file.write(&bytes[..]);
+
+      match out_file.write(&bytes[..]) {
+         Ok(_) => (),
+         Err(err) => {
+            println!("Unable to write to output file: {}", err);
+            std::process::exit(-1);
+         }
+      }
    }
 }
 
