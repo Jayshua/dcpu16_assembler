@@ -1,0 +1,12 @@
+[package]
+name = "dcpu16_assembler"
+version = "0.1.0"
+authors = ["Jayshua Nelson <me@jayshuanelson.com>"]
+build = "build.rs"
+
+[dependencies]
+dcpu16_types = { path = "../dcpu16_types" }
+
+[build-dependencies]
+peg = "0.5.4"
+dcpu16_types = { path = "../dcpu16_types" }

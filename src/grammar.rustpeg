@@ -1,0 +1,159 @@
+use super::dcpu16_types::{SpecialOperation, BasicOperation};
+use super::ast::{Literal, Register, Indirection, Value, Destination, Instruction, DatData};
+
+
+pub program -> Vec<Instruction>
+  = _* prog:(instruction ** (_+)) {prog}
+
+instruction -> Instruction
+  = op:basic_operation _+ dest:destination _+ val:value  { Instruction::Basic(op, dest, val) }
+  / op:special_operation _+ val:value                    { Instruction::Special(op, val) }
+  / ":" lab:label                                        { Instruction::Label(lab) }
+  / "DAT"i data:(_+ l:dat_data {l})+                     { Instruction::Data(data) }
+
+
+destination -> Destination
+  = "push"i         { Destination::Push }
+  / ind:indirection { Destination::Indirection(ind) }
+  / reg:register    { Destination::Register(reg) }
+
+
+value -> Value
+  = "pop"i             { Value::Pop }
+  / ind:indirection    { Value::Indirection(ind) }
+  / reg:register    &_ { Value::Register(reg) }
+  / lit:literal        { Value::Literal(lit) }
+
+
+indirection -> Indirection
+  = "[" _* reg:register _* "]"                        { Indirection::Register(reg) }
+  / "[" _* reg:register _* "+" _* lit:literal  _* "]" { Indirection::RegisterPlusLiteral(reg, lit) }
+  / "[" _* lit:literal  _* "+" _* reg:register _* "]" { Indirection::RegisterPlusLiteral(reg, lit) }
+  / "[" _* lit:literal  _* "]"                        { Indirection::Literal(lit) }
+
+
+dat_data -> DatData
+  = number:number { DatData::Number(number) }
+  / label:label   { DatData::Label(label)   }
+  / string:string { DatData::String(string) }
+
+
+literal -> Literal
+  = number:number { Literal::Number(number) }
+  / label:label   { Literal::Label(label)   }
+
+
+register -> Register
+  = "A"i  { Register::A  }
+  / "B"i  { Register::B  }
+  / "C"i  { Register::C  }
+  / "X"i  { Register::X  }
+  / "Y"i  { Register::Y  }
+  / "Z"i  { Register::Z  }
+  / "I"i  { Register::I  }
+  / "J"i  { Register::J  }
+  / "PC"i { Register::PC }
+  / "SP"i { Register::SP }
+  / "EX"i { Register::EX }
+
+
+basic_operation -> BasicOperation
+  = "set"i { BasicOperation::Set }
+  / "add"i { BasicOperation::Add }
+  / "sub"i { BasicOperation::Sub }
+  / "mul"i { BasicOperation::Mul }
+  / "mli"i { BasicOperation::Mli }
+  / "div"i { BasicOperation::Div }
+  / "dvi"i { BasicOperation::Dvi }
+  / "mod"i { BasicOperation::Mod }
+  / "mdi"i { BasicOperation::Mdi }
+  / "and"i { BasicOperation::And }
+  / "bor"i { BasicOperation::Bor }
+  / "xor"i { BasicOperation::Xor }
+  / "shr"i { BasicOperation::Shr }
+  / "asr"i { BasicOperation::Asr }
+  / "shl"i { BasicOperation::Shl }
+  / "ifb"i { BasicOperation::Ifb }
+  / "ifc"i { BasicOperation::Ifc }
+  / "ife"i { BasicOperation::Ife }
+  / "ifn"i { BasicOperation::Ifn }
+  / "ifg"i { BasicOperation::Ifg }
+  / "ifa"i { BasicOperation::Ifa }
+  / "ifl"i { BasicOperation::Ifl }
+  / "ifu"i { BasicOperation::Ifu }
+  / "adx"i { BasicOperation::Adx }
+  / "sbx"i { BasicOperation::Sbx }
+  / "sti"i { BasicOperation::Sti }
+  / "std"i { BasicOperation::Std }
+
+
+special_operation -> SpecialOperation
+  = "jsr"i { SpecialOperation::Jsr }
+  / "int"i { SpecialOperation::Int }
+  / "iag"i { SpecialOperation::Iag }
+  / "ias"i { SpecialOperation::Ias }
+  / "rfi"i { SpecialOperation::Rfi }
+  / "iaq"i { SpecialOperation::Iaq }
+  / "hwn"i { SpecialOperation::Hwn }
+  / "hwq"i { SpecialOperation::Hwq }
+  / "hwi"i { SpecialOperation::Hwi }
+
+
+label -> String
+  = first:$([a-zA-Z_]) rest:$([a-zA-Z0-9_]+)
+  { format!("{}{}", first, rest) }
+
+
+string -> String
+  = "\"" s:quotedCharacter* "\""
+    { s.into_iter().collect() }
+
+quotedCharacter -> char
+  = simpleQuotedCharacter
+  / escapeSequence
+
+simpleQuotedCharacter -> char
+  = !('"' / "\\" / end_of_line) c:$.
+  { c.chars().next().unwrap() }
+
+escapeSequence -> char
+  = "\\" !end_of_line c:$(.)
+  {
+    match c.chars().next().unwrap() {
+      'n' => '\n',
+      'r' => '\r',
+      't' => '\t',
+      '0' => 0u8 as char,
+      x => x
+    }
+  }
+
+
+number -> u16
+  = hexadecimal
+  / binary
+  / decimal
+
+
+decimal -> u16
+  = number:$([0-9]+)
+  { u16::from_str_radix(number, 10).unwrap() }
+
+
+hexadecimal -> u16
+  = "0x" number:$([0-9a-fA-F]+)
+  { u16::from_str_radix(number, 16).unwrap() }
+
+
+binary -> u16
+  = "0b" number:$([0-1]+)
+  { u16::from_str_radix(number, 2).unwrap() }
+
+
+_ = (whitespace / end_of_line / comment)
+
+whitespace = [ \t,]
+
+end_of_line = "\n" / "\r\n" / "\r"
+
+comment = ";" (!end_of_line .)*
