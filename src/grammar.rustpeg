@@ -4,11 +4,22 @@ use super::ast::*;
 pub program -> Vec<Instruction>
   = _* prog:(instruction ** (_+)) {prog}
 
+
 instruction -> Instruction
   = op:basic_operation _+ dest:destination _+ val:value  { Instruction::Basic(op, dest, val) }
   / op:special_operation _+ val:value                    { Instruction::Special(op, val) }
-  / ":" lab:label                                        { Instruction::Label(lab) }
-  / "DAT"i data:(_+ l:dat_data {l})+                     { Instruction::Data(data) }
+  / label_instruction
+  / data_instruction
+
+
+label_instruction -> Instruction
+  = #quiet<(":" label:identifier { Instruction::Label(label) })>
+  / #expected(":label")
+
+
+data_instruction -> Instruction
+  = #quiet<"dat"i data:(_+ l:dat_data {l})+ {Instruction::Data(data)}>
+  / #expected("Data (dat 0xffff...)")
 
 
 destination -> Destination
@@ -32,73 +43,82 @@ indirection -> Indirection
 
 
 dat_data -> DatData
-  = number:number { DatData::Number(number) }
-  / label:label   { DatData::Label(label)   }
-  / string:string { DatData::String(string) }
+  = number:number    { DatData::Number(number) }
+  / label:identifier { DatData::Label(label)   }
+  / string:string    { DatData::String(string) }
 
 
 literal -> Literal
-  = number:number { Literal::Number(number) }
-  / label:label   { Literal::Label(label)   }
+  = number:number    { Literal::Number(number) }
+  / label:identifier { Literal::Label(label)   }
 
 
 register -> Register
-  = "A"i  { Register::A  }
-  / "B"i  { Register::B  }
-  / "C"i  { Register::C  }
-  / "X"i  { Register::X  }
-  / "Y"i  { Register::Y  }
-  / "Z"i  { Register::Z  }
-  / "I"i  { Register::I  }
-  / "J"i  { Register::J  }
-  / "PC"i { Register::PC }
-  / "SP"i { Register::SP }
-  / "EX"i { Register::EX }
+  = #quiet<
+      "A"i  { Register::A  }
+      / "B"i  { Register::B  }
+      / "C"i  { Register::C  }
+      / "X"i  { Register::X  }
+      / "Y"i  { Register::Y  }
+      / "Z"i  { Register::Z  }
+      / "I"i  { Register::I  }
+      / "J"i  { Register::J  }
+      / "PC"i { Register::PC }
+      / "SP"i { Register::SP }
+      / "EX"i { Register::EX }
+    >
+  / #expected("Register (a, b, c, x, y, z, i, j, pc, sp, ex)")
 
 
 basic_operation -> BasicOperation
-  = "set"i { BasicOperation::Set }
-  / "add"i { BasicOperation::Add }
-  / "sub"i { BasicOperation::Sub }
-  / "mul"i { BasicOperation::Mul }
-  / "mli"i { BasicOperation::Mli }
-  / "div"i { BasicOperation::Div }
-  / "dvi"i { BasicOperation::Dvi }
-  / "mod"i { BasicOperation::Mod }
-  / "mdi"i { BasicOperation::Mdi }
-  / "and"i { BasicOperation::And }
-  / "bor"i { BasicOperation::Bor }
-  / "xor"i { BasicOperation::Xor }
-  / "shr"i { BasicOperation::Shr }
-  / "asr"i { BasicOperation::Asr }
-  / "shl"i { BasicOperation::Shl }
-  / "ifb"i { BasicOperation::Ifb }
-  / "ifc"i { BasicOperation::Ifc }
-  / "ife"i { BasicOperation::Ife }
-  / "ifn"i { BasicOperation::Ifn }
-  / "ifg"i { BasicOperation::Ifg }
-  / "ifa"i { BasicOperation::Ifa }
-  / "ifl"i { BasicOperation::Ifl }
-  / "ifu"i { BasicOperation::Ifu }
-  / "adx"i { BasicOperation::Adx }
-  / "sbx"i { BasicOperation::Sbx }
-  / "sti"i { BasicOperation::Sti }
-  / "std"i { BasicOperation::Std }
+  = #quiet<
+      "set"i   { BasicOperation::Set }
+      / "add"i { BasicOperation::Add }
+      / "sub"i { BasicOperation::Sub }
+      / "mul"i { BasicOperation::Mul }
+      / "mli"i { BasicOperation::Mli }
+      / "div"i { BasicOperation::Div }
+      / "dvi"i { BasicOperation::Dvi }
+      / "mod"i { BasicOperation::Mod }
+      / "mdi"i { BasicOperation::Mdi }
+      / "and"i { BasicOperation::And }
+      / "bor"i { BasicOperation::Bor }
+      / "xor"i { BasicOperation::Xor }
+      / "shr"i { BasicOperation::Shr }
+      / "asr"i { BasicOperation::Asr }
+      / "shl"i { BasicOperation::Shl }
+      / "ifb"i { BasicOperation::Ifb }
+      / "ifc"i { BasicOperation::Ifc }
+      / "ife"i { BasicOperation::Ife }
+      / "ifn"i { BasicOperation::Ifn }
+      / "ifg"i { BasicOperation::Ifg }
+      / "ifa"i { BasicOperation::Ifa }
+      / "ifl"i { BasicOperation::Ifl }
+      / "ifu"i { BasicOperation::Ifu }
+      / "adx"i { BasicOperation::Adx }
+      / "sbx"i { BasicOperation::Sbx }
+      / "sti"i { BasicOperation::Sti }
+      / "std"i { BasicOperation::Std }
+    >
+  / #expected("Basic Operation (set, add, etc.)")
 
 
 special_operation -> SpecialOperation
-  = "jsr"i { SpecialOperation::Jsr }
-  / "int"i { SpecialOperation::Int }
-  / "iag"i { SpecialOperation::Iag }
-  / "ias"i { SpecialOperation::Ias }
-  / "rfi"i { SpecialOperation::Rfi }
-  / "iaq"i { SpecialOperation::Iaq }
-  / "hwn"i { SpecialOperation::Hwn }
-  / "hwq"i { SpecialOperation::Hwq }
-  / "hwi"i { SpecialOperation::Hwi }
+  = #quiet<
+      "jsr"i { SpecialOperation::Jsr }
+      / "int"i { SpecialOperation::Int }
+      / "iag"i { SpecialOperation::Iag }
+      / "ias"i { SpecialOperation::Ias }
+      / "rfi"i { SpecialOperation::Rfi }
+      / "iaq"i { SpecialOperation::Iaq }
+      / "hwn"i { SpecialOperation::Hwn }
+      / "hwq"i { SpecialOperation::Hwq }
+      / "hwi"i { SpecialOperation::Hwi }
+    >
+  / #expected("Special Operation (jsr, hwi, etc.)")
 
 
-label -> String
+identifier -> String
   = first:$([a-zA-Z_]) rest:$([a-zA-Z0-9_]+)
   { format!("{}{}", first, rest) }
 
@@ -149,7 +169,7 @@ binary -> u16
   { u16::from_str_radix(number, 2).unwrap() }
 
 
-_ = (whitespace / end_of_line / comment)
+_ = #quiet<(whitespace / end_of_line / comment)>
 
 whitespace = [ \t,]
 
