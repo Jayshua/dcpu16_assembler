@@ -8,7 +8,7 @@ extern crate dcpu16_assembler;
 use dcpu16_assembler::assemble;
 
 extern crate argparse;
-use argparse::{ArgumentParser, StoreTrue, Store, StoreOption};
+use argparse::{ArgumentParser, Store, StoreOption};
 
 use std::fs::File;
 use std::path::Path;
@@ -19,10 +19,10 @@ use std::io::{Write, Read};
 // Get the input and output files from the cli arguments,
 // read the file, assemble it, and write the output to a file.
 fn main() {
-   let (output_file_path, input_file_path, print_ast) = get_arguments();
+   let (output_file_path, input_file_path) = get_arguments();
    let input_program = read_program(input_file_path);
 
-   let assembled_program = match assemble(input_program.as_str(), print_ast) {
+   let assembled_program = match assemble(input_program.as_str()) {
       Ok(program) => program,
 
       Err(err) => {
@@ -37,26 +37,24 @@ fn main() {
 
 
 // Get the input file path and output file path from the command line arguments
-fn get_arguments() -> (String, String, bool) {
+fn get_arguments() -> (String, String) {
    // Get the arguments from the command line
    let mut input_argument: String = String::new();
    let mut output_argument: Option<String> = None;
-   let mut print_ast: bool = false;
 
    {
       let mut ap = ArgumentParser::new();
       ap.set_description("DCPU-16 Assembler");
       ap.refer(&mut input_argument).add_argument("file", Store, "file to compile").required();
       ap.refer(&mut output_argument).add_option(&["-o", "--out"], StoreOption, "set the output file");
-      ap.refer(&mut print_ast).add_option(&["-a", "--ast"], StoreTrue, "print the parsed Abstract Syntax Tree (for debugging the code generator)");
       ap.parse_args_or_exit();
    }
 
 
    // Return the arguments with a default output file filled in if necessary
    match output_argument {
-      Some(output_path) => (output_path, input_argument, print_ast),
-      None => (Path::new(&input_argument).with_extension("bin").to_str().unwrap().to_string(), input_argument, print_ast),
+      Some(output_path) => (output_path, input_argument),
+      None => (Path::new(&input_argument).with_extension("bin").to_str().unwrap().to_string(), input_argument),
    }
 }
 
