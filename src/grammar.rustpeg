@@ -31,8 +31,8 @@ destination -> Destination
 value -> Value
   = "pop"i             { Value::Pop }
   / ind:indirection    { Value::Indirection(ind) }
-  / reg:register    &_ { Value::Register(reg) }
   / lit:literal        { Value::Literal(lit) }
+  / reg:register       { Value::Register(reg) }
 
 
 indirection -> Indirection
@@ -50,7 +50,7 @@ dat_data -> DatData
 
 literal -> Literal
   = number:number    { Literal::Number(number) }
-  / label:identifier { Literal::Label(label)   }
+  / ":" label:identifier { Literal::Label(label)   }
 
 
 register -> Register
