@@ -155,14 +155,11 @@ number -> u16
 
 
 decimal -> u16
-  = number:$([0-9]+)
-  { u16::from_str_radix(number, 10).unwrap() }
-
+  = number:$("-"? [0-9]+) { i16::from_str_radix(number, 10).unwrap() as u16 }
 
 hexadecimal -> u16
   = "0x" number:$([0-9a-fA-F]+)
   { u16::from_str_radix(number, 16).unwrap() }
-
 
 binary -> u16
   = "0b" number:$([0-1]+)
